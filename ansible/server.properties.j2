@@ -37,6 +37,9 @@ listeners=INTERNAL_PLAINTEXT://:9093,PLAINTEXT://:9092
 # it uses the value for "listeners" if configured.  Otherwise, it will use the value
 # returned from java.net.InetAddress.getCanonicalHostName().
 #advertised.listeners=PLAINTEXT://your.host.name:9092
+
+# Listener on port 9093 is for SSH tunneling use, see documentation at:
+# https://cwiki.apache.org/confluence/display/KAFKA/KIP-103%3A+Separation+of+Internal+and+External+traffic
 advertised.listeners=INTERNAL_PLAINTEXT://localhost:9093,PLAINTEXT://{{ ansible_default_ipv4.address }}:9092
 
 # Maps listener names to security protocols, the default is for them to be the same. See the config documentation for more details
