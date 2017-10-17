@@ -49,8 +49,8 @@
         - start confluent services
 
     - name: Configure Kafka broker
-      copy:
-        src: server.properties
+      template:
+        src: server.properties.j2
         dest: /etc/kafka/server.properties
       notify:
         - stop confluent services
