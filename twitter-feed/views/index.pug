@@ -1,0 +1,34 @@
+html
+  head
+    title= title
+    script(src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous")
+    script.
+      let wsUrl = 'ws' + window.location.href.match(/^http(s?:\/\/.*)\/.*$/)[1];
+      var ws = new WebSocket(wsUrl);
+      ws.onmessage = function(event) {
+        var eventJSON = JSON.parse(event.data);
+        var newTweet = document.createElement('p');
+        newTweet.appendChild(document.createTextNode(eventJSON.text));
+
+        $(newTweet).prependTo('#tweets').hide().slideDown();
+
+        var tweetCount = $('#tweets').childElementCount;
+        if (tweetCount > 50) {
+          $('#tweets').children('p:last').remove();
+        }
+
+      };
+    style(type='text/css').
+      body {
+        font-family: sans-serif;
+        background-color: #eee;
+      }
+      h1 {
+        color: #211746;
+      }
+      p {
+        color: #4A90E2;
+      }
+  body
+    h1= message
+    #tweets

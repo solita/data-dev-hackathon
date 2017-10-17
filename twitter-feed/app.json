@@ -1,0 +1,24 @@
+{
+  "name": "kafka-tweet-consumer",
+  "scripts": {
+  },
+  "env": {
+    "KAFKA_URL": {
+      "required": true
+    },
+    "KAFKA_TOPIC": {
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "addons": [],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
