@@ -20,6 +20,11 @@ Start kafka & zookeeper:
 zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties & kafka-server-start /usr/local/etc/kafka/server.properties
 ```
 
+Create kafka topic
+```
+kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic trump
+```
+
 Add twitter authentication tokens to kafka-producer.py and start it using:
 ```
 python kafka-producer.py
@@ -35,3 +40,5 @@ Run node.js app
 ```
 node app.js
 ```
+
+The app is now running at http://localhost:3000
