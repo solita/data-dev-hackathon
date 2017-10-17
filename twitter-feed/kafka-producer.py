@@ -9,8 +9,13 @@ consumer_key = "consumer_key"
 consumer_secret = "consumer_secret"
 
 class StdOutListener(StreamListener):
+    def __init__(self):
+        self.msg_count = 0
+
     def on_data(self, data):
         producer.send_messages("trump", data.encode('utf-8'))
+        self.msg_count = self.msg_count + 1
+        if self.msg_count % 20 == 0:
         print (data)
         return True
     def on_error(self, status):
