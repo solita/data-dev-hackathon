@@ -1,0 +1,78 @@
+- name: Install Python2.7
+  hosts: all
+  gather_facts: false
+  remote_user: ubuntu
+  become: yes
+  pre_tasks:
+    - name: apt-get update
+      raw: apt-get update -qq
+    - name: Install python 2.7
+      raw: apt-get install -qq python2.7
+
+- name: Install Confluent platform
+  hosts: all
+  remote_user: ubuntu
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python2.7
+  handlers:
+    - name: stop confluent services
+      command: confluent stop
+    - name: start confluent services
+      command: confluent start
+    - name: restart control center
+      systemd:
+        name: confluent-control-center.service
+        daemon_reload: yes
+        state: restarted
+  tasks:
+    - name: Add apt key
+      apt_key:
+        url: http://packages.confluent.io/deb/3.3/archive.key
+        state: present
+
+    - name: Add repository
+      apt_repository:
+        repo: deb [arch=amd64] http://packages.confluent.io/deb/3.3 stable main
+        state: present
+
+    - name: Install dependencies
+      apt:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - openjdk-8-jdk
+        - confluent-platform-2.11
+        - confluent-control-center
+      notify:
+        - stop confluent services
+        - start confluent services
+
+    - name: Configure Kafka broker
+      copy:
+        src: server.properties
+        dest: /etc/kafka/server.properties
+      notify:
+        - stop confluent services
+        - start confluent services
+
+    - name: Add SSH keys
+      authorized_key:
+        user: ubuntu
+        state: present
+        key: "{{ item }}"
+      with_items: "{{ users }}"
+
+    - name: Configure Confluent Control Center
+      copy:
+        src: control-center.properties
+        dest: /home/ubuntu/control-center.properties
+      notify:
+        - restart control center
+
+    - name: Install Systemd unit for Confluent Control Center
+      copy:
+        src: confluent-control-center.service
+        dest: /etc/systemd/system/confluent-control-center.service
+      notify:
+        - restart control center

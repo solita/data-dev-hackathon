@@ -1,0 +1,10 @@
+[Unit]
+Description=Confluent Control Center
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+ExecStart=/usr/bin/control-center-start /home/ubuntu/control-center.properties
+
