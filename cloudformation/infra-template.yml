@@ -1,0 +1,243 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Example stack for Data dev Hack
+Parameters:
+  ESdomainName: 
+    Type: String
+    Default: ADD-ES-DOMAIN-NAME
+  ESIndexName: 
+    Type: String
+    Default: ADD-ES-INDEX-NAME
+  ESsourceIP:
+    Type: String
+    Default: ADD-SOLITA-IP-HERE  
+Resources:
+  HackKinesisStream:
+    DependsOn:
+      - FireHoseAccessS3Policy
+    Type: 'AWS::KinesisFirehose::DeliveryStream'
+    Properties:
+      ElasticsearchDestinationConfiguration: 
+        BufferingHints: 
+          IntervalInSeconds: 60
+          SizeInMBs: 50
+        CloudWatchLoggingOptions: 
+          Enabled: true
+          LogGroupName: "deliverystream"
+          LogStreamName: "elasticsearchDelivery"
+        DomainARN:
+          Fn::GetAtt: 
+            - ElasticsearchDomain
+            - DomainArn
+        IndexName: !Ref ESIndexName
+        IndexRotationPeriod: "NoRotation"
+        TypeName: "fromFirehose"
+        RetryOptions: 
+          DurationInSeconds: "60"
+        RoleARN: 
+          Fn::GetAtt: 
+            - "FirehoseRole"
+            - "Arn"
+        S3BackupMode: "AllDocuments"
+        S3Configuration: 
+          BucketARN: 
+            Fn::GetAtt: 
+              - "FireHoseS3TargetBucket"
+              - "Arn"
+          BufferingHints: 
+            IntervalInSeconds: "60"
+            SizeInMBs: "50"
+          CompressionFormat: "UNCOMPRESSED"
+          Prefix: "firehose/"
+          RoleARN: 
+            Fn::GetAtt: 
+              - "FirehoseRole"
+              - "Arn"
+          CloudWatchLoggingOptions: 
+            Enabled: true
+            LogGroupName: "deliverystream"
+            LogStreamName: "s3Backup"
+  FireHoseS3TargetBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+  FirehoseRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "firehose.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref 'AWS::AccountId'
+  FireHoseAccessS3Policy:
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: "FirehoseS3Access"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Action: 
+              - "s3:AbortMultipartUpload"        
+              - "s3:GetBucketLocation"       
+              - "s3:GetObject"       
+              - "s3:ListBucket"        
+              - "s3:ListBucketMultipartUploads"        
+              - "s3:PutObject"
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref FireHoseS3TargetBucket
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref FireHoseS3TargetBucket
+                  - '*'
+          -
+            Effect: "Allow"
+            Action:
+              - "es:DescribeElasticsearchDomain"
+              - "es:DescribeElasticsearchDomains"
+              - "es:DescribeElasticsearchDomainConfig"
+              - "es:ESHttpPost"
+              - "es:ESHttpPut"           
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/*'
+          -
+            Effect: "Allow"
+            Action:
+              - "es:ESHttpGet"       
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/_all/_settings'
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/_cluster/stats'
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/'
+                  - !Ref ESIndexName
+                  - '*/_mapping/type-name'
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/_nodes'
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/_nodes/stats' 
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/_nodes/*/stats'
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/_stats'
+              - !Join
+                - ''
+                - - 'arn:aws:es:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':domain/'
+                  - !Ref ESdomainName
+                  - '/'
+                  - !Ref ESIndexName
+                  - '*/_stats'                                  
+      Roles:
+        - !Ref FirehoseRole
+  ElasticsearchDomain: 
+    Type: "AWS::Elasticsearch::Domain"
+    Properties:
+      DomainName: !Ref ESdomainName
+      ElasticsearchVersion: "5.5"
+      ElasticsearchClusterConfig: 
+        DedicatedMasterEnabled: "false"
+        InstanceCount: "1"
+        ZoneAwarenessEnabled: "false"
+        InstanceType: "t2.small.elasticsearch"
+      EBSOptions: 
+        EBSEnabled: true
+        Iops: 0
+        VolumeSize: 10
+        VolumeType: "standard"
+      AccessPolicies: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action: "es:*"
+            Condition:
+              IpAddress: 
+                aws:SourceIp:
+                  - !Ref ESsourceIP
+      AdvancedOptions: 
+        rest.action.multi.allow_explicit_index: "true"
